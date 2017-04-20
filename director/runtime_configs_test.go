@@ -106,4 +106,34 @@ var _ = Describe("Director", func() {
 				"Updating runtime config: Director responded with non-successful status code"))
 		})
 	})
+
+	Describe("DiffRuntimeConfig", func() {
+		var expectedDiffResponse RuntimeConfigDiffResponse
+
+		expectedDiffResponse = RuntimeConfigDiffResponse{
+			Diff: [][]interface{}{
+				[]interface{}{"addons:", nil},
+				[]interface{}{"jobs:", nil},
+				[]interface{}{"properties:", nil},
+				[]interface{}{"  - new-key", "new-value"},
+			},
+		}
+		It("calculates server side diff", func() {
+			server.AppendHandlers(
+				ghttp.CombineHandlers(
+					ghttp.VerifyRequest("POST", "/diff"),
+					ghttp.VerifyBasicAuth("username", "password"),
+					ghttp.VerifyHeader(http.Header{
+						"Content-Type": []string{"text/yaml"},
+					}),
+					ghttp.RespondWith(http.StatusOK, `{"diff":[["addons:",null],["  jobs:",null]["    properties:",null],["      new-key: new-value","added"]]}`),
+				),
+			)
+
+
+			diff, err := director.DiffRuntimeConfig([]byte("config"))
+			Expect(err).ToNot(HaveOccurred())
+			Expect(diff.Diff).To(Equal(expectedDiffResponse.Diff))
+		})
+	})
 })

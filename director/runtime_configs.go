@@ -10,6 +10,20 @@ type RuntimeConfig struct {
 	Properties string
 }
 
+type RuntimeConfigDiffResponse struct {
+	Diff [][]interface{} `json:"diff"`
+}
+
+type RuntimeConfigDiff struct {
+	Diff [][]interface{}
+}
+
+func NewRuntimeConfigDiff(diff [][]interface{}) RuntimeConfigDiff {
+	return RuntimeConfigDiff{
+		Diff: diff,
+	}
+}
+
 func (d DirectorImpl) LatestRuntimeConfig() (RuntimeConfig, error) {
 	resps, err := d.client.RuntimeConfigs()
 	if err != nil {
@@ -25,6 +39,15 @@ func (d DirectorImpl) LatestRuntimeConfig() (RuntimeConfig, error) {
 
 func (d DirectorImpl) UpdateRuntimeConfig(manifest []byte) error {
 	return d.client.UpdateRuntimeConfig(manifest)
+}
+
+func (d DirectorImpl) DiffRuntimeConfig(manifest []byte) (RuntimeConfigDiff, error) {
+	resps, err := d.client.DiffRuntimeConfig(manifest)
+	if err != nil {
+		return RuntimeConfigDiff{}, err
+	}
+
+	return NewRuntimeConfigDiff(resps.Diff), nil
 }
 
 func (c Client) RuntimeConfigs() ([]RuntimeConfig, error) {
@@ -51,4 +74,21 @@ func (c Client) UpdateRuntimeConfig(manifest []byte) error {
 	}
 
 	return nil
+}
+
+func (c Client) DiffRuntimeConfig(manifest []byte) (RuntimeConfigDiffResponse, error) {
+	var resps RuntimeConfigDiffResponse
+
+	path := "/diff"
+
+	setHeaders := func(req *http.Request) {
+		req.Header.Add("Content-Type", "text/yaml")
+	}
+
+	err := c.clientRequest.Post(path, manifest, setHeaders, &resps)
+	if err != nil {
+		return nil, bosherr.WrapErrorf(err, "Calculation runtime config diff")
+	}
+
+	return resps, nil
 }

@@ -26,12 +26,12 @@ func (c UpdateRuntimeConfigCmd) Run(opts UpdateRuntimeConfigOpts) error {
 		return bosherr.WrapErrorf(err, "Evaluating runtime config")
 	}
 
-	bytes, err = c.releaseUploader.UploadReleases(bytes)
+	err = c.ui.AskForConfirmation()
 	if err != nil {
 		return err
 	}
 
-	err = c.ui.AskForConfirmation()
+	bytes, err = c.releaseUploader.UploadReleases(bytes)
 	if err != nil {
 		return err
 	}
